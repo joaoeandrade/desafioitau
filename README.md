@@ -101,3 +101,4 @@ src/main/java/com/example/eventplatform
 src/main/resources/db/migration   Flyway (tabela particionada por mês)
 k8s/ · observability/ · loadtest/ · docs/
 ```
+# desafioitau
