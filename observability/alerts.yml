@@ -1,0 +1,54 @@
+# Alertas derivados dos SLOs (ver docs/ARCHITECTURE.md §SLOs).
+groups:
+  - name: event-platform-slo
+    rules:
+      - alert: IngestLatencyP95Above200ms
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(http_server_requests_seconds_bucket{uri=~"/api/v1/events.*", method="POST"}[5m]))
+          ) > 0.2
+        for: 5m
+        labels: {severity: page}
+        annotations:
+          summary: "p95 de ingestão acima de 200ms"
+          runbook: "docs/runbook.md#latencia-de-ingestao"
+
+      - alert: IngestErrorRateHigh
+        expr: |
+          sum(rate(http_server_requests_seconds_count{uri=~"/api/v1/events.*", status=~"5.."}[5m]))
+            / sum(rate(http_server_requests_seconds_count{uri=~"/api/v1/events.*"}[5m])) > 0.01
+        for: 5m
+        labels: {severity: page}
+        annotations:
+          summary: "Mais de 1% de erros 5xx na ingestão"
+          runbook: "docs/runbook.md#erros-de-ingestao"
+
+      - alert: PersistenceConsumerLagGrowing
+        expr: sum(kafka_consumergroup_lag{consumergroup="event-persistence"}) > 500000
+        for: 10m
+        labels: {severity: ticket}
+        annotations:
+          summary: "Lag de persistência acima de 500k mensagens (~100s em regime normal)"
+          runbook: "docs/runbook.md#lag-de-consumo"
+
+      - alert: DeadLetterTopicReceivingMessages
+        expr: sum(increase(kafka_topic_partition_current_offset{topic=~".*\\.dlt"}[15m])) > 0
+        labels: {severity: ticket}
+        annotations:
+          summary: "Mensagens chegando na DLT"
+          runbook: "docs/runbook.md#dlt"
+
+      - alert: DownstreamCircuitOpen
+        expr: max(resilience4j_circuitbreaker_state{name="downstream", state="open"}) == 1
+        for: 2m
+        labels: {severity: ticket}
+        annotations:
+          summary: "Circuit breaker da integração externa aberto"
+          runbook: "docs/runbook.md#integracao-externa"
+
+      - alert: IdempotencyFailOpen
+        expr: sum(rate(idempotency_fail_open_total[5m])) > 10
+        for: 5m
+        labels: {severity: ticket}
+        annotations:
+          summary: "Redis indisponível: idempotência rápida desativada (deduplicação segue no banco)"

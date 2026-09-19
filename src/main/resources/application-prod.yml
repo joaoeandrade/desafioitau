@@ -1,0 +1,22 @@
+# Produção: documentação da API desligada e emissor JWT obrigatório.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+platform:
+  security:
+    dev-hmac-secret: ""   # nunca definido em produção
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${JWT_ISSUER_URI}   # obrigatório: falha na inicialização se ausente
+
+logging:
+  structured:
+    format:
+      console: ecs   # JSON (Elastic Common Schema) com traceId/spanId, pronto para Loki/ELK

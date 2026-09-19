@@ -1,0 +1,34 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: event-platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: event-platform
+  minReplicas: 4       # regime normal (5k ev/s) com folga para perda de uma zona
+  maxReplicas: 16      # pico (20k ev/s) com ~2x de margem
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: {type: Utilization, averageUtilization: 60}
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - {type: Percent, value: 100, periodSeconds: 30}   # dobra rápido em picos
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - {type: Percent, value: 20, periodSeconds: 60}    # reduz devagar
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: event-platform
+spec:
+  minAvailable: 75%
+  selector:
+    matchLabels: {app: event-platform}

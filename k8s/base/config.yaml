@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: event-platform-config
+data:
+  SPRING_PROFILES_ACTIVE: prod
+  DB_URL: jdbc:postgresql://events-db-rw:5432/events?reWriteBatchedInserts=true&sslmode=require
+  DB_POOL_SIZE: "10"           # 16 pods x 10 = 160 conexões; acima disso, usar PgBouncer
+  KAFKA_BOOTSTRAP: kafka-bootstrap:9093
+  KAFKA_PARTITIONS: "24"
+  KAFKA_REPLICAS: "3"
+  PERSISTENCE_CONCURRENCY: "2"
+  INTEGRATION_CONCURRENCY: "2"
+  REDIS_HOST: redis-master
+  OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
+  TRACING_SAMPLING: "0.05"
+  JWT_ISSUER_URI: https://auth.example.com/realms/platform
+  INTEGRATION_ENABLED: "false"
+---
+# Exemplo apenas. Em produção, use External Secrets / Vault / Sealed Secrets — nunca commit de segredos reais.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: event-platform-secrets
+type: Opaque
+stringData:
+  DB_USER: events_app
+  DB_PASSWORD: change-me
+  REDIS_PASSWORD: change-me
+  INTEGRATION_WEBHOOK_SECRET: change-me

@@ -1,0 +1,16 @@
+# Desenvolvimento local com docker compose.
+platform:
+  kafka:
+    replicas: 1
+    partitions: 12
+  security:
+    # Segredo apenas de desenvolvimento (>= 32 bytes). NUNCA usar fora do perfil local.
+    dev-hmac-secret: local-dev-secret-change-me-0123456789abcdef
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  endpoint:
+    health:
+      show-details: always
